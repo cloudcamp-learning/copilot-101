@@ -1,0 +1,381 @@
+{% extends 'base.html' %}
+
+{% block title %}To-Do List - Mis Tareas{% endblock %}
+
+{% block extra_styles %}
+<style>
+    .form-section {
+        background: var(--light-bg);
+        border: 2px solid var(--border-color);
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 30px;
+    }
+    
+    .form-section h5 {
+        color: var(--primary-color);
+        margin-bottom: 15px;
+        font-weight: 600;
+    }
+    
+    .form-group {
+        margin-bottom: 15px;
+    }
+    
+    .form-control {
+        border: 2px solid var(--border-color);
+        border-radius: 8px;
+        padding: 12px 15px;
+        font-size: 0.95rem;
+        transition: all 0.3s ease;
+    }
+    
+    .form-control:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    }
+    
+    .btn-add {
+        background: linear-gradient(135deg, var(--primary-color) 0%, #667eea 100%);
+        border: none;
+        border-radius: 8px;
+        padding: 12px 30px;
+        font-weight: 600;
+        color: white;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        width: 100%;
+    }
+    
+    .btn-add:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(79, 70, 229, 0.3);
+        color: white;
+    }
+    
+    .btn-add:active {
+        transform: translateY(0);
+    }
+    
+    .tasks-section {
+        margin-top: 20px;
+    }
+    
+    .tasks-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid var(--border-color);
+    }
+    
+    .tasks-header h5 {
+        color: var(--primary-color);
+        margin: 0;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+    }
+    
+    .tasks-header i {
+        margin-right: 10px;
+    }
+    
+    .task-count {
+        background: var(--primary-color);
+        color: white;
+        border-radius: 50px;
+        padding: 5px 12px;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+    
+    .task-list {
+        list-style: none;
+        padding: 0;
+    }
+    
+    .task-item {
+        background: white;
+        border: 2px solid var(--border-color);
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        transition: all 0.3s ease;
+        animation: slideIn 0.3s ease-out;
+    }
+    
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateX(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+    
+    .task-item:hover {
+        border-color: var(--primary-color);
+        box-shadow: 0 5px 15px rgba(79, 70, 229, 0.15);
+    }
+    
+    .task-item.completed {
+        background: #f0fdf4;
+        border-color: var(--success-color);
+    }
+    
+    .task-content {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        min-width: 0;
+    }
+    
+    .task-checkbox {
+        width: 24px;
+        height: 24px;
+        cursor: pointer;
+        accent-color: var(--success-color);
+        flex-shrink: 0;
+    }
+    
+    .task-title {
+        font-size: 1rem;
+        font-weight: 500;
+        color: #1f2937;
+        word-break: break-word;
+        transition: all 0.3s ease;
+    }
+    
+    .task-item.completed .task-title {
+        color: #9ca3af;
+        text-decoration: line-through;
+        text-decoration-thickness: 2px;
+    }
+    
+    .task-actions {
+        display: flex;
+        gap: 10px;
+        flex-shrink: 0;
+    }
+    
+    .btn-action {
+        border: none;
+        border-radius: 6px;
+        padding: 8px 12px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        white-space: nowrap;
+    }
+    
+    .btn-toggle {
+        background: var(--success-color);
+        color: white;
+    }
+    
+    .btn-toggle:hover {
+        background: #059669;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 12px rgba(16, 185, 129, 0.3);
+    }
+    
+    .task-item.completed .btn-toggle {
+        background: #d1d5db;
+    }
+    
+    .task-item.completed .btn-toggle:hover {
+        background: #9ca3af;
+    }
+    
+    .btn-delete {
+        background: var(--danger-color);
+        color: white;
+    }
+    
+    .btn-delete:hover {
+        background: #dc2626;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 12px rgba(239, 68, 68, 0.3);
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+        color: #9ca3af;
+    }
+    
+    .empty-state i {
+        font-size: 3rem;
+        margin-bottom: 15px;
+        opacity: 0.5;
+    }
+    
+    .empty-state p {
+        margin: 0;
+        font-size: 1.1rem;
+    }
+    
+    .stats {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .stat-card {
+        background: var(--light-bg);
+        border-radius: 8px;
+        padding: 15px;
+        text-align: center;
+    }
+    
+    .stat-card .number {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: var(--primary-color);
+    }
+    
+    .stat-card .label {
+        font-size: 0.85rem;
+        color: #6b7280;
+        margin-top: 5px;
+    }
+    
+    @media (max-width: 576px) {
+        .btn-action {
+            font-size: 0.8rem;
+            padding: 6px 10px;
+        }
+        
+        .task-title {
+            font-size: 0.95rem;
+        }
+        
+        .card-header-custom h1 {
+            font-size: 1.5rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Sección del Formulario -->
+<div class="form-section">
+    <h5><i class="fas fa-plus-circle"></i> Agregar Nueva Tarea</h5>
+    <form method="POST" action="{{ url_for('tareas.crear_nueva_tarea') }}" class="form-add-task">
+        <div class="form-group">
+            <input 
+                type="text" 
+                class="form-control" 
+                name="titulo" 
+                placeholder="Escribe tu nueva tarea aquí..."
+                required
+                maxlength="200"
+                autocomplete="off"
+            >
+        </div>
+        <button type="submit" class="btn-add">
+            <i class="fas fa-plus"></i> Agregar Tarea
+        </button>
+    </form>
+</div>
+
+<!-- Sección de Estadísticas -->
+{% if tareas %}
+<div class="stats">
+    <div class="stat-card">
+        <div class="number">{{ tareas|length }}</div>
+        <div class="label">Total de Tareas</div>
+    </div>
+    <div class="stat-card">
+        <div class="number">{{ tareas|selectattr('completada', 'equalto', True)|list|length }}</div>
+        <div class="label">Completadas</div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Sección de Tareas -->
+<div class="tasks-section">
+    <div class="tasks-header">
+        <h5><i class="fas fa-list-check"></i> Mis Tareas</h5>
+        {% if tareas %}
+        <span class="task-count">{{ tareas|length }}</span>
+        {% endif %}
+    </div>
+    
+    {% if tareas %}
+        <ul class="task-list">
+            {% for tarea in tareas %}
+            <li class="task-item {% if tarea.completada %}completed{% endif %}">
+                <div class="task-content">
+                    <form method="POST" action="{{ url_for('tareas.toggle_tarea', id=tarea.id) }}" style="margin: 0; display: inline;">
+                        <input 
+                            type="checkbox" 
+                            class="task-checkbox" 
+                            {% if tarea.completada %}checked{% endif %}
+                            onchange="this.form.submit()"
+                            title="{% if tarea.completada %}Marcar como incompleta{% else %}Marcar como completada{% endif %}"
+                        >
+                    </form>
+                    <span class="task-title">{{ tarea.titulo }}</span>
+                </div>
+                
+                <div class="task-actions">
+                    <form method="POST" action="{{ url_for('tareas.toggle_tarea', id=tarea.id) }}" style="margin: 0;">
+                        <button type="submit" class="btn-action btn-toggle" title="{% if tarea.completada %}Marcar como incompleta{% else %}Marcar como completada{% endif %}">
+                            <i class="fas {% if tarea.completada %}fa-undo{% else %}fa-check{% endif %}"></i>
+                            <span class="d-none d-sm-inline">{% if tarea.completada %}Deshacer{% else %}Completar{% endif %}</span>
+                        </button>
+                    </form>
+                    
+                    <form method="POST" action="{{ url_for('tareas.eliminar_tarea', id=tarea.id) }}" style="margin: 0;" onsubmit="return confirm('¿Estás seguro de que deseas eliminar esta tarea?');">
+                        <button type="submit" class="btn-action btn-delete" title="Eliminar tarea">
+                            <i class="fas fa-trash-alt"></i>
+                            <span class="d-none d-sm-inline">Eliminar</span>
+                        </button>
+                    </form>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <div class="empty-state">
+            <i class="fas fa-inbox"></i>
+            <p>No tienes tareas aún. ¡Crea una para comenzar!</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Enfoque automático en el campo de entrada al cargar la página
+    document.addEventListener('DOMContentLoaded', function() {
+        const inputTarea = document.querySelector('input[name="titulo"]');
+        if (inputTarea) {
+            inputTarea.focus();
+        }
+    });
+    
+    // Validar que el campo no esté vacío antes de enviar
+    document.querySelector('.form-add-task').addEventListener('submit', function(e) {
+        const titulo = document.querySelector('input[name="titulo"]').value.trim();
+        if (!titulo) {
+            e.preventDefault();
+            alert('Por favor, escribe una tarea antes de agregar.');
+        }
+    });
+</script>
+{% endblock %}
