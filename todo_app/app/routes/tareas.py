@@ -3,15 +3,15 @@
 Arquitectura:
 - Implementa un CRUD básico en memoria utilizando una estructura de datos global
 - Las tareas se almacenan en una lista de diccionarios
-- Cada tarea tiene: id (único), titulo, descripcion, completada (boolean)
-- Validar datos de entrada y retornar respuestas JSON con códigos HTTP apropiados
+- Cada tarea tiene: id (único), titulo, completada (boolean)
+- Validar datos de entrada y retornar respuestas JSON o redirigir según se requiera
 
-Estandarización de respuestas:
-- Éxito (200, 201): {'success': True, 'data': {...}, 'mensaje': '...'}
-- Error (400, 404): {'success': False, 'error': '...', 'codigo': '...'}
+Flujo:
+- GET: Retorna datos (JSON o plantilla HTML)
+- POST: Modifica datos y redirige a la vista principal
 """
 
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, render_template, redirect, url_for
 
 # Crear Blueprint para las rutas de tareas
 # Prefijo '/tareas' se añade en __init__.py
@@ -30,11 +30,17 @@ tareas_bp = Blueprint(
 # Formato: {
 #     'id': int,
 #     'titulo': str,
-#     'descripcion': str,
 #     'completada': bool
 # }
 tareas_db = []
-counter_id = 0  # Contador para generar IDs únicos
+contador_id = 0  # Contador para generar IDs únicos
+
+
+def obtener_siguiente_id():
+    """Genera el siguiente ID disponible para una nueva tarea."""
+    global contador_id
+    contador_id += 1
+    return contador_id
 
 
 # ============================================================================
@@ -43,62 +49,64 @@ counter_id = 0  # Contador para generar IDs únicos
 
 @tareas_bp.route('/', methods=['GET'])
 def obtener_todas_las_tareas():
-    """Obtener todas las tareas.
+    """Obtener todas las tareas y renderizar la plantilla index.html.
     
     Método HTTP: GET
     Ruta: /tareas/
     
     Funcionalidad:
-    - Retorna la lista completa de tareas almacenadas en memoria
+    - Retorna la plantilla HTML con la lista completa de tareas
     - Incluye tareas completadas e incompletas
+    - Renderiza el formulario para añadir nuevas tareas
     
-    Respuesta esperada (200 OK):
+    Context esperado en la plantilla:
     {
-        'success': True,
-        'data': [
-            {'id': 1, 'titulo': 'Tarea 1', 'descripcion': '...', 'completada': False},
-            {'id': 2, 'titulo': 'Tarea 2', 'descripcion': '...', 'completada': True}
-        ],
-        'total': 2
+        'tareas': [
+            {'id': 1, 'titulo': 'Tarea 1', 'completada': False},
+            {'id': 2, 'titulo': 'Tarea 2', 'completada': True}
+        ]
     }
     """
-    pass
+    return render_template('index.html', tareas=tareas_db)
 
 
 @tareas_bp.route('/add', methods=['POST'])
 def crear_nueva_tarea():
-    """Crear una nueva tarea.
+    """Crear una nueva tarea y redirigir a la vista principal.
     
     Método HTTP: POST
     Ruta: /tareas/add
     
-    Datos esperados (JSON):
+    Datos esperados (formulario o JSON):
     {
-        'titulo': str (requerido, no vacío),
-        'descripcion': str (opcional, default: '')
+        'titulo': str (requerido, no vacío)
     }
     
     Validaciones:
     - El título es obligatorio y no puede estar vacío
-    - La descripción es opcional
+    - El título se elimina de espacios en blanco
     
-    Respuesta esperada (201 Created):
-    {
-        'success': True,
-        'data': {
-            'id': 3,
-            'titulo': 'Nueva tarea',
-            'descripcion': '...',
-            'completada': False
-        },
-        'mensaje': 'Tarea creada exitosamente'
-    }
+    Comportamiento:
+    - Crea una nueva tarea con ID autoincremental
+    - Estado inicial: completada = False
+    - Redirige a /tareas/ después de crear
     
-    Errores posibles (400 Bad Request):
-    - Título vacío o no proporcionado
-    - Formato JSON inválido
+    Errores posibles:
+    - Título vacío o no proporcionado -> redirige sin crear
     """
-    pass
+    titulo = request.form.get('titulo', '').strip()
+    
+    # Validar que el título no esté vacío
+    if titulo:
+        nueva_tarea = {
+            'id': obtener_siguiente_id(),
+            'titulo': titulo,
+            'completada': False
+        }
+        tareas_db.append(nueva_tarea)
+    
+    # Redirigir a la vista principal
+    return redirect(url_for('tareas.obtener_todas_las_tareas'))
 
 
 @tareas_bp.route('/toggle/<int:id>', methods=['POST'])
@@ -113,23 +121,20 @@ def toggle_tarea(id):
     - Invierte el estado de completación de la tarea
     - Si completada=False, pasa a True
     - Si completada=True, pasa a False
+    - Redirige a /tareas/ después de actualizar
     
-    Respuesta esperada (200 OK):
-    {
-        'success': True,
-        'data': {
-            'id': 1,
-            'titulo': 'Tarea 1',
-            'descripcion': '...',
-            'completada': True  # Ahora es True (antes era False)
-        },
-        'mensaje': 'Tarea actualizada exitosamente'
-    }
-    
-    Errores posibles (404 Not Found):
-    - ID de tarea no existe
+    Comportamiento en caso de error:
+    - Si el ID no existe, redirige sin hacer cambios
     """
-    pass
+    # Buscar la tarea por ID
+    for tarea in tareas_db:
+        if tarea['id'] == id:
+            # Invertir el estado de completación
+            tarea['completada'] = not tarea['completada']
+            break
+    
+    # Redirigir a la vista principal
+    return redirect(url_for('tareas.obtener_todas_las_tareas'))
 
 
 @tareas_bp.route('/delete/<int:id>', methods=['POST'])
@@ -143,21 +148,15 @@ def eliminar_tarea(id):
     Funcionalidad:
     - Busca la tarea con el ID especificado
     - La elimina del almacenamiento en memoria
-    - Retorna confirmación de eliminación
+    - Redirige a /tareas/ después de eliminar
     
-    Respuesta esperada (200 OK):
-    {
-        'success': True,
-        'data': {
-            'id': 1,
-            'titulo': 'Tarea eliminada',
-            'descripcion': '...',
-            'completada': False
-        },
-        'mensaje': 'Tarea eliminada exitosamente'
-    }
-    
-    Errores posibles (404 Not Found):
-    - ID de tarea no existe
+    Comportamiento en caso de error:
+    - Si el ID no existe, redirige sin hacer cambios
     """
-    pass
+    global tareas_db
+    
+    # Filtrar la tarea con el ID especificado
+    tareas_db = [tarea for tarea in tareas_db if tarea['id'] != id]
+    
+    # Redirigir a la vista principal
+    return redirect(url_for('tareas.obtener_todas_las_tareas'))
