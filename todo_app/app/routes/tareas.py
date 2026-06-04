@@ -11,7 +11,7 @@ Flujo:
 - POST: Modifica datos y redirige a la vista principal
 """
 
-from flask import Blueprint, request, jsonify, render_template, redirect, url_for
+from flask import Blueprint, request, render_template, redirect, url_for
 
 # Crear Blueprint para las rutas de tareas
 # Prefijo '/tareas' se añade en __init__.py
@@ -19,8 +19,8 @@ tareas_bp = Blueprint(
     name='tareas',
     import_name=__name__,
     url_prefix='',  # El prefijo se aplica en el registro en __init__.py
-    template_folder='../templates/tareas',
-    static_folder='../static'
+    template_folder='../../templates',  # Ruta a la carpeta de templates
+    static_folder='../../static'  # Ruta a la carpeta de static
 )
 
 # ============================================================================
